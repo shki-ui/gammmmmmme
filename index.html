@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Новогодний кроссворд</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    color: #eaf2ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(120,180,255,.18), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(255,150,200,.15), transparent 45%),
+      radial-gradient(circle at 50% 100%, rgba(80,200,160,.12), transparent 55%),
+      linear-gradient(180deg, #0a1428 0%, #0d1a33 40%, #07101f 100%);
+  }
+
+  /* Лунная дымка сверху */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 50% -10%, rgba(200,230,255,.18), transparent 55%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Гирлянда из огоньков вверху */
+  .garland {
+    position: fixed; top: 0; left: 0; right: 0; height: 60px;
+    pointer-events: none; z-index: 2; overflow: hidden;
+  }
+  .garland::before {
+    content: "";
+    position: absolute; top: 8px; left: -5%; right: -5%; height: 26px;
+    border-bottom: 2px solid rgba(255,255,255,.18);
+    border-radius: 50%;
+  }
+  .bulb {
+    position: absolute; top: 26px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #ffd36b;
+    box-shadow: 0 0 12px 4px rgba(255,211,107,.85);
+    animation: twinkle 1.6s infinite alternate ease-in-out;
+  }
+  .bulb:nth-child(5n+1) { background:#ff6b6b; box-shadow:0 0 12px 4px rgba(255,107,107,.85); }
+  .bulb:nth-child(5n+2) { background:#8af0ff; box-shadow:0 0 12px 4px rgba(138,240,255,.85); }
+  .bulb:nth-child(5n+3) { background:#9bff8a; box-shadow:0 0 12px 4px rgba(155,255,138,.85); }
+  .bulb:nth-child(5n+4) { background:#ffa4e0; box-shadow:0 0 12px 4px rgba(255,164,224,.85); }
+  .bulb:nth-child(5n+5) { background:#ffe36b; box-shadow:0 0 12px 4px rgba(255,227,107,.85); }
+  @keyframes twinkle {
+    from { opacity: .55; transform: scale(.85); }
+    to   { opacity: 1;   transform: scale(1.1); }
+  }
+
+  h1 {
+    font-size: 2.2em;
+    margin: 34px 0 4px;
+    background: linear-gradient(90deg, #ffd36b, #ff8a8a, #8af0ff, #ffd36b);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+    filter: drop-shadow(0 0 14px rgba(255,200,80,.55));
+    animation: shine 6s linear infinite;
+    position: relative; z-index: 3;
+  }
+  @keyframes shine { to { background-position: 300% 0; } }
+
+  .subtitle { color: #9fb6d8; margin-bottom: 18px; text-align: center; position: relative; z-index: 3; }
+
+  /* Снежинки */
+  .snow { position: fixed; top: -10px; color: #fff; pointer-events: none; animation: fall linear infinite; opacity: .75; z-index: 1; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+
+  .game { position: relative; z-index: 3; display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .left-col { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+  /* Сетка — как подарочная коробка */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(11, 46px);
+    grid-template-rows: repeat(11, 46px);
+    gap: 4px;
+    padding: 16px;
+    border-radius: 20px;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,211,107,.06) 0 10px, transparent 10px 20px),
+      linear-gradient(145deg, #1c3358, #102343);
+    border: 2px solid rgba(255,211,107,.45);
+    box-shadow:
+      0 0 0 4px rgba(255,255,255,.04),
+      0 12px 40px rgba(0,0,0,.55),
+      0 0 55px rgba(120,180,255,.35),
+      inset 0 0 30px rgba(255,255,255,.05);
+    position: relative;
+  }
+  /* Ленточка-бант на «коробке» */
+  .grid::before, .grid::after {
+    content: "";
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%,-50%);
+    pointer-events: none;
+  }
+  .grid::before {
+    width: calc(100% - 8px); height: 10px;
+    background: linear-gradient(90deg, transparent, rgba(255,211,107,.18), transparent);
+  }
+  .grid::after {
+    height: calc(100% - 8px); width: 10px;
+    background: linear-gradient(180deg, transparent, rgba(255,211,107,.18), transparent);
+  }
+
+  .cell {
+    width: 46px; height: 46px; border-radius: 10px;
+    background: rgba(255,255,255,.03);
+    transition: background .2s;
+  }
+  .cell.active { background: rgba(255,255,255,.10); }
+  .cell.selected { background: rgba(255,211,107,.12); }
+
+  .cell input {
+    width: 100%; height: 100%;
+    border: none; border-radius: 10px;
+    text-align: center;
+    font-size: 1.25em; font-weight: 800;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #1b2f52, #12203a);
+    color: #eaf2ff;
+    outline: none;
+    caret-color: #ffd36b;
+    transition: background .25s, color .25s, box-shadow .25s, transform .1s;
+    border: 1px solid rgba(140,190,255,.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 4px rgba(0,0,0,.35);
+  }
+  .cell input:focus {
+    box-shadow:
+      0 0 0 2px #ffd36b,
+      0 0 18px rgba(255,211,107,.75),
+      inset 0 0 8px rgba(255,211,107,.25);
+    transform: translateY(-1px);
+  }
+  .cell.selected input { background: linear-gradient(180deg, #24426e, #1a3157); }
+
+  /* Правильно — ёлочно-зелёный с золотым ободком */
+  .cell.correct input {
+    background: linear-gradient(180deg, #2aa85e, #167a41) !important;
+    color: #eafff1 !important;
+    border-color: #7dffb0 !important;
+    box-shadow: 0 0 16px rgba(76,224,138,.75), inset 0 1px 0 rgba(255,255,255,.25) !important;
+  }
+  /* Неправильно — красный с лёгким дрожанием */
+  .cell.wrong input {
+    background: linear-gradient(180deg, #c22c3e, #8a1f2b) !important;
+    color: #ffe3e6 !important;
+    border-color: #ff8f8f !important;
+    box-shadow: 0 0 16px rgba(255,80,80,.7) !important;
+    animation: shake .35s;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+
+  /* Кнопка — золотая с блёстками */
+  .check-btn {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1.08em;
+    font-weight: 800;
+    letter-spacing: .5px;
+    color: #2a1a00;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,.55), transparent 40%),
+      linear-gradient(180deg, #ffe89a 0%, #ffd05a 45%, #e8a92c 100%);
+    border: 2px solid #fff3c4;
+    border-radius: 14px;
+    padding: 13px 32px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 5px 0 #a8751a,
+      0 12px 28px rgba(255,180,40,.45),
+      inset 0 1px 0 rgba(255,255,255,.8);
+    transition: transform .08s, box-shadow .2s, filter .2s;
+  }
+  .check-btn::after {
+    content: "";
+    position: absolute; top: 0; left: -60%;
+    width: 40%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.85), transparent);
+    transform: skewX(-20deg);
+    animation: btnShine 3.2s infinite;
+  }
+  @keyframes btnShine {
+    0% { left: -60%; }
+    55% { left: 130%; }
+    100% { left: 130%; }
+  }
+  .check-btn:hover { filter: brightness(1.07); box-shadow: 0 5px 0 #a8751a, 0 14px 36px rgba(255,190,60,.65), inset 0 1px 0 rgba(255,255,255,.9); }
+  .check-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #a8751a, 0 6px 18px rgba(255,180,40,.45); }
+
+  /* Панель вопросов */
+  .panel {
+    width: 340px; max-width: 92vw;
+    background: linear-gradient(160deg, rgba(28,50,85,.9), rgba(14,28,52,.92));
+    border: 1px solid rgba(255,211,107,.35);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 35px rgba(120,180,255,.2), inset 0 1px 0 rgba(255,255,255,.06);
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 100% 0%, rgba(255,211,107,.10), transparent 45%);
+    pointer-events: none;
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 1.15em; color: #ffd36b; text-shadow: 0 0 12px rgba(255,211,107,.5); }
+
+  .question-box {
+    min-height: 76px;
+    background: rgba(255,255,255,.04);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 1em;
+    line-height: 1.45;
+    border: 1px dashed rgba(255,211,107,.45);
+    box-shadow: inset 0 0 14px rgba(120,180,255,.08);
+  }
+  .q-label { color: #8af0ff; font-weight: 700; margin-right: 6px; }
+
+  .clue-list { max-height: 260px; overflow-y: auto; padding-right: 4px; }
+  .clue-list::-webkit-scrollbar { width: 6px; }
+  .clue-list::-webkit-scrollbar-thumb { background: #2c4a7a; border-radius: 3px; }
+  .clue-item {
+    display: flex; gap: 8px; align-items: baseline;
+    padding: 8px 10px; margin-bottom: 6px;
+    border-radius: 10px; cursor: pointer;
+    background: rgba(255,255,255,.03);
+    border: 1px solid transparent;
+    font-size: .92em;
+    transition: background .2s, border-color .2s, transform .1s;
+  }
+  .clue-item:hover { background: rgba(255,211,107,.10); border-color: rgba(255,211,107,.35); transform: translateX(2px); }
+  .clue-item.active { background: rgba(255,211,107,.18); border-color: rgba(255,211,107,.6); }
+  .clue-item .num { color: #ffd36b; font-weight: 800; }
+  .clue-item .dir { color: #8af0ff; font-size: .85em; }
+  .clue-item .txt { color: #d4e2f7; }
+  .clue-item.solved { opacity: .45; text-decoration: line-through; }
+
+  .progress { margin-top: 14px; font-size: .95em; color: #9fb6d8; text-align: center; }
+  .win {
+    margin-top: 12px; text-align: center;
+    color: #ffd36b; font-size: 1.15em; font-weight: 800;
+    display: none;
+    text-shadow: 0 0 16px rgba(255,211,107,.8);
+    animation: pulse 1.2s infinite alternate;
+  }
+  @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.06); } }
+
+  /* Ёлочки по бокам */
+  .tree {
+    position: fixed; bottom: 0;
+    font-size: 90px; line-height: 1; opacity: .18;
+    pointer-events: none; z-index: 0;
+    filter: drop-shadow(0 0 20px rgba(120,255,180,.35));
+    animation: sway 5s ease-in-out infinite alternate;
+  }
+  .tree.left  { left: 8px; }
+  .tree.right { right: 8px; animation-delay: -2.5s; }
+  @keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: repeat(11, 32px); grid-template-rows: repeat(11, 32px); gap: 3px; padding: 10px; }
+    .cell, .cell input { width: 32px; height: 32px; font-size: 1em; }
+    .tree { font-size: 60px; opacity: .12; }
+    h1 { font-size: 1.6em; margin-top: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Гирлянда -->
+<div class="garland" id="garland"></div>
+
+<!-- Ёлочки по краям -->
+<div class="tree left">🎄</div>
+<div class="tree right">🎄</div>
+
+<h1>✨ Новогодний кроссворд ✨</h1>
+<div class="subtitle">Нажми на строчку — появится вопрос. Впиши слово и нажми Enter или «Проверить слово».</div>
+
+<div class="game">
+  <div class="left-col">
+    <div class="grid" id="grid"></div>
+    <button class="check-btn" id="checkBtn" type="button">✅ Проверить слово</button>
+  </div>
+  <div class="panel">
+    <h2>Вопрос</h2>
+    <div class="question-box" id="questionBox">Выбери слово в сетке или в списке ниже 🎄</div>
+    <div class="clue-list" id="clueList"></div>
+    <div class="progress" id="progress">Отгадано: 0 из 10</div>
+    <div class="win" id="win">🎉 Поздравляем! Кроссворд разгадан! 🎉</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Гирлянда и снежинки ---------- */
+  function buildGarland() {
+    var g = document.getElementById('garland');
+    if (!g) return;
+    var n = 22;
+    for (var i = 0; i < n; i++) {
+      var b = document.createElement('div');
+      b.className = 'bulb';
+      b.style.left = (i / (n - 1)) * 100 + '%';
+      b.style.top = (26 + Math.sin(i * 0.55) * 9) + 'px';
+      b.style.animationDelay = (Math.random() * 1.5) + 's';
+      g.appendChild(b);
+    }
+  }
+  function makeSnow() {
+    var symbols = ['❄', '❅', '❆', '✻'];
+    for (var i = 0; i < 45; i++) {
+      var s = document.createElement('div');
+      s.className = 'snow';
+      s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      s.style.left = (Math.random() * 100) + 'vw';
+      s.style.fontSize = (8 + Math.random() * 18) + 'px';
+      s.style.animationDuration = (6 + Math.random() * 10) + 's';
+      s.style.animationDelay = (-Math.random() * 10) + 's';
+      document.body.appendChild(s);
+    }
+  }
+
+  /* ---------- Игровая логика (без изменений) ---------- */
+  var COLS = 11, ROWS = 11;
+
+  var H = [
+    { id:'h1', row:1, col:0, answer:'СНЕГ',    clue:'Белые хлопья, которые падают с неба зимой' },
+    { id:'h2', row:3, col:2, answer:'ЁЛКА',    clue:'Пушистое дерево, вокруг которого водят хоровод в новогоднюю ночь' },
+    { id:'h3', row:5, col:0, answer:'ПОДАРОК', clue:'Сюрприз в красивой упаковке, который находят под деревом' },
+    { id:'h4', row:7, col:3, answer:'САЛЮТ',   clue:'Разноцветные огни, взлетающие в небо в полночь' },
+    { id:'h5', row:9, col:4, answer:'МИШУРА',  clue:'Блестящее украшение, которое вешают на ветви праздничного дерева' }
+  ];
+
+  var V_POOL = [
+    { id:'v1', answer:'МОРОЗ',    clue:'Дед ..., главный волшебник зимнего праздника' },
+    { id:'v2', answer:'ЗИМА',     clue:'Самое холодное время года' },
+    { id:'v3', answer:'СВЕЧА',    clue:'Её зажигают на праздничном столе' },
+    { id:'v4', answer:'ЛЁД',      clue:'Замёрзшая вода на реке' },
+    { id:'v5', answer:'САНКИ',    clue:'Зимний транспорт для катания с горки' },
+    { id:'v6', answer:'ЁЖ',       clue:'Колючий зверёк, который спит зимой' },
+    { id:'v7', answer:'ШУБА',     clue:'Тёплая зимняя одежда' },
+    { id:'v8', answer:'ГОРКА',    clue:'Ледяная насыпь, с которой катаются' },
+    { id:'v9', answer:'ХЛОПУШКА', clue:'Бумажный шарик-игрушка, который хлопает при раскрытии' },
+    { id:'v10', answer:'КАНИКУЛЫ',clue:'Долгий перерыв в учёбе у школьников' }
+  ];
+
+  function placeVerticals() {
+    var board = [], r, c, i, k;
+    for (r = 0; r < ROWS; r++) { board[r] = []; for (c = 0; c < COLS; c++) board[r][c] = null; }
+    for (i = 0; i < H.length; i++) {
+      var hw = H[i];
+      for (k = 0; k < hw.answer.length; k++) board[hw.row][hw.col + k] = hw.answer[k];
+    }
+    var placedV = [], usedCols = {};
+    for (i = 0; i < V_POOL.length && placedV.length < 5; i++) {
+      var vw = V_POOL[i], found = null;
+      for (var col = 0; col < COLS && !found; col++) {
+        if (usedCols[col]) continue;
+        for (var startR = 0; startR <= ROWS - vw.answer.length && !found; startR++) {
+          var overlaps = 0, ok = true;
+          for (k = 0; k < vw.answer.length; k++) {
+            var cell = board[startR + k][col];
+            if (cell) { overlaps++; if (cell !== vw.answer[k]) { ok = false; break; } }
+          }
+          if (ok && overlaps > 0) found = { row: startR, col: col };
+        }
+      }
+      if (found) {
+        placedV.push({ id: vw.id, row: found.row, col: found.col, dir: 'v', answer: vw.answer, clue: vw.clue });
+        usedCols[found.col] = true;
+        for (k = 0; k < vw.answer.length; k++) board[found.row + k][found.col] = vw.answer[k];
+      }
+    }
+    var words = [];
+    for (i = 0; i < H.length; i++) words.push({ id: H[i].id, row: H[i].row, col: H[i].col, dir: 'h', answer: H[i].answer, clue: H[i].clue });
+    for (i = 0; i < placedV.length; i++) words.push(placedV[i]);
+    return words;
+  }
+
+  var words = placeVerticals();
+
+  var state = { selected:null, solved:{}, inputs:{} };
+  var gridEl, qBox, listEl, progEl, winEl, checkBtn;
+
+  function buildBoard() {
+    var board = [], r, c, i, k;
+    for (r = 0; r < ROWS; r++) { board[r] = []; for (c = 0; c < COLS; c++) board[r][c] = null; }
+    for (i = 0; i < words.length; i++) {
+      var w = words[i];
+      for (k = 0; k < w.answer.length; k++) {
+        var rr = w.dir === 'v' ? w.row + k : w.row;
+        var cc = w.dir === 'h' ? w.col + k : w.col;
+        board[rr][cc] = w.answer[k];
+      }
+    }
+    return board;
+  }
+  function letterIndex(w,r,c){ if(w.dir==='h') return (r===w.row&&c>=w.col&&c<w.col+w.answer.length)?c-w.col:-1; return (c===w.col&&r>=w.row&&r<w.row+w.answer.length)?r-w.row:-1; }
+  function cellCoords(w,idx){ return { r:w.dir==='v'?w.row+idx:w.row, c:w.dir==='h'?w.col+idx:w.col }; }
+  function getInput(w,idx){ var p=cellCoords(w,idx); return state.inputs[p.r+','+p.c]||null; }
+  function getCellEl(w,idx){ var p=cellCoords(w,idx); return gridEl.children[p.r*COLS+p.c]||null; }
+  function findWordById(id){ for(var i=0;i<words.length;i++) if(words[i].id===id) return words[i]; return null; }
+  function wordsAt(r,c){ var res=[]; for(var i=0;i<words.length;i++) if(letterIndex(words[i],r,c)>-1) res.push(words[i]); return res; }
+
+  function selectWordAt(r,c,ff){ var m=wordsAt(r,c); if(!m.length)return; var t=null; for(var i=0;i<m.length;i++) if(!state.solved[m[i].id]){t=m[i];break;} if(!t)t=m[0]; selectWord(t.id,ff); }
+  function selectWord(id,ff){
+    var w=findWordById(id); if(!w)return; state.selected=id;
+    var ac=gridEl.querySelectorAll('.cell'); for(var i=0;i<ac.length;i++) ac[i].classList.remove('selected','active');
+    for(var k=0;k<w.answer.length;k++){ var cell=getCellEl(w,k); if(!cell)continue; cell.classList.add('active'); if(!state.solved[id]) cell.classList.add('selected'); }
+    qBox.innerHTML='<span class="q-label">'+(w.dir==='h'?'➡️ По горизонтали':'⬇️ По вертикали')+':</span> '+w.clue;
+    renderClues(); if(ff){ var f=getInput(w,0); if(f)f.focus(); }
+  }
+  function renderClues(){
+    listEl.innerHTML='';
+    for(var i=0;i<words.length;i++){
+      var w=words[i], div=document.createElement('div');
+      div.className='clue-item'+(state.selected===w.id?' active':'')+(state.solved[w.id]?' solved':'');
+      div.innerHTML='<span class="num">'+(w.dir==='h'?'➡':'⬇')+'</span><span class="dir">'+w.answer.length+' б.</span><span class="txt">'+w.clue+'</span>';
+      (function(id){div.onclick=function(){selectWord(id,true);};})(w.id);
+      listEl.appendChild(div);
+    }
+  }
+  function checkWordFromInput(inp){
+    if(!inp)return;
+    var r=parseInt(inp.getAttribute('data-r'),10), c=parseInt(inp.getAttribute('data-c'),10);
+    var m=wordsAt(r,c); if(!m.length)return;
+    var w=null; for(var i=0;i<m.length;i++) if(!state.solved[m[i].id]){w=m[i];break;}
+    if(!w)return;
+    var typed='', cells=[];
+    for(var k=0;k<w.answer.length;k++){ var ci=getInput(w,k); typed+=ci?(ci.value||'').toUpperCase():''; cells.push(getCellEl(w,k)); }
+    for(var j=0;j<cells.length;j++) if(cells[j]) cells[j].classList.remove('correct','wrong');
+    if(typed===w.answer){ state.solved[w.id]=true;
+      for(var m2=0;m2<cells.length;m2++){ if(!cells[m2])continue; cells[m2].classList.add('correct'); cells[m2].classList.remove('selected'); }
+    } else {
+      for(var n=0;n<cells.length;n++){(function(cell,wid){ if(!cell)return; cell.classList.add('wrong'); setTimeout(function(){ if(!state.solved[wid]) cell.classList.remove('wrong'); },1200); })(cells[n],w.id);}
+    }
+    updateProgress(); renderClues();
+  }
+  function checkSelectedWord(){
+    var w=findWordById(state.selected);
+    if(!w){ qBox.innerHTML='Сначала выбери слово в сетке или в списке 🎄'; return; }
+    if(state.solved[w.id]){ qBox.innerHTML='✅ Это слово уже отгадано! Выбери другое.'; return; }
+    var f=getInput(w,0); if(f) checkWordFromInput(f);
+  }
+  function updateProgress(){
+    var n=0; for(var k in state.solved) if(state.solved[k]) n++;
+    progEl.textContent='Отгадано: '+n+' из '+words.length;
+    if(n===words.length){ winEl.style.display='block'; qBox.innerHTML='🎄 Ты настоящий знаток Нового года! 🎄'; }
+  }
+  function buildGrid(board){
+    for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++){
+      var cell=document.createElement('div'); cell.className='cell';
+      if(board[r][c]){
+        var inp=document.createElement('input'); inp.maxLength=1;
+        inp.setAttribute('data-r',r); inp.setAttribute('data-c',c); inp.setAttribute('autocomplete','off');
+        cell.appendChild(inp); state.inputs[r+','+c]=inp;
+        (function(inpEl,rr,cc){
+          inpEl.addEventListener('focus',function(){selectWordAt(rr,cc,false);});
+          inpEl.addEventListener('click',function(){selectWordAt(rr,cc,false);});
+          inpEl.addEventListener('input',function(){
+            var v=inpEl.value.replace(/[^а-яА-ЯёЁa-zA-Z]/g,'').toUpperCase(); inpEl.value=v.slice(0,1);
+            var w=findWordById(state.selected);
+            if(w&&inpEl.value){ var idx=letterIndex(w,rr,cc); if(idx>-1&&idx<w.answer.length-1){ var nx=getInput(w,idx+1); if(nx)nx.focus(); } }
+          });
+          inpEl.addEventListener('keydown',function(e){
+            if(e.key==='Enter'){e.preventDefault();checkWordFromInput(inpEl);return;}
+            if(e.key==='Backspace'&&!inpEl.value){ var w=findWordById(state.selected); if(w){var idx=letterIndex(w,rr,cc); if(idx>0){var pv=getInput(w,idx-1); if(pv)pv.focus();}} }
+            if(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='ArrowDown'){
+              var w2=findWordById(state.selected); if(!w2)return;
+              var idx2=letterIndex(w2,rr,cc); if(idx2<0)return;
+              var ni=idx2;
+              if(e.key==='ArrowRight'||e.key==='ArrowDown') ni=Math.min(w2.answer.length-1,idx2+1);
+              if(e.key==='ArrowLeft'||e.key==='ArrowUp') ni=Math.max(0,idx2-1);
+              if(ni!==idx2){e.preventDefault();var t=getInput(w2,ni); if(t)t.focus();}
+            }
+          });
+        })(inp,r,c);
+      }
+      gridEl.appendChild(cell);
+    }
+  }
+
+  function init(){
+    gridEl=document.getElementById('grid'); qBox=document.getElementById('questionBox');
+    listEl=document.getElementById('clueList'); progEl=document.getElementById('progress');
+    winEl=document.getElementById('win'); checkBtn=document.getElementById('checkBtn');
+    var board=buildBoard(); buildGrid(board); renderClues(); updateProgress();
+    buildGarland(); makeSnow();
+    checkBtn.addEventListener('click',checkSelectedWord);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+</body>
+</html>
